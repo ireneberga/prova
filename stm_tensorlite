@@ -1,0 +1,1619 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyMcauRcJug+T5HlQRD81Vij",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/ireneberga/prova/blob/main/stm_tensorlite\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 77,
+      "metadata": {
+        "id": "BWp7sHAX8TKQ"
+      },
+      "outputs": [],
+      "source": [
+        "import os\n",
+        "import numpy as np\n",
+        "import h5py\n",
+        "import matplotlib.pyplot as plt\n",
+        "import tensorflow as tf\n",
+        "from tensorflow import keras\n",
+        "from tensorflow.keras.layers import Flatten\n",
+        "from tensorflow.keras.layers import Dense\n",
+        "from tensorflow.keras.losses import SparseCategoricalCrossentropy\n",
+        "from sklearn.metrics import accuracy_score\n",
+        "from sys import getsizeof"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(tf.__version__)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "wm9zfgkh8bkt",
+        "outputId": "a5861fa3-79ba-4536-908f-e25e03875730"
+      },
+      "execution_count": 2,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "2.14.0\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "helper functions"
+      ],
+      "metadata": {
+        "id": "XeiBtc2g9N4V"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def get_file_size(file_path):\n",
+        "    size = os.path.getsize(file_path)\n",
+        "    return size"
+      ],
+      "metadata": {
+        "id": "wqkDWnjU8bxY"
+      },
+      "execution_count": 78,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def convert_bytes(size, unit=None):\n",
+        "    if unit == \"KB\":\n",
+        "        return print('File size: ' + str(round(size / 1024, 3)) + ' Kilobytes')\n",
+        "    elif unit == \"MB\":\n",
+        "        return print('File size: ' + str(round(size / (1024 * 1024), 3)) + ' Megabytes')\n",
+        "    else:\n",
+        "        return print('File size: ' + str(size) + ' bytes')"
+      ],
+      "metadata": {
+        "id": "Y75JiNGh8b0_"
+      },
+      "execution_count": 79,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "importo dataset"
+      ],
+      "metadata": {
+        "id": "v_AWqQxTAGKs"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import matplotlib.pyplot as plt\n",
+        "import seaborn as sns"
+      ],
+      "metadata": {
+        "id": "9pnjJNOs8b7i"
+      },
+      "execution_count": 80,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from google.colab import files\n",
+        "\n",
+        "# Carica il file sul notebook di Google Colab\n",
+        "uploaded = files.upload()\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 73
+        },
+        "id": "q0NG4dTZ8b_K",
+        "outputId": "a46e1dd2-796c-4858-f9ec-35a9373e3080"
+      },
+      "execution_count": 96,
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.HTML object>"
+            ],
+            "text/html": [
+              "\n",
+              "     <input type=\"file\" id=\"files-1ee78be5-3c49-4547-8f7b-2ddb4b7510e5\" name=\"files[]\" multiple disabled\n",
+              "        style=\"border:none\" />\n",
+              "     <output id=\"result-1ee78be5-3c49-4547-8f7b-2ddb4b7510e5\">\n",
+              "      Upload widget is only available when the cell has been executed in the\n",
+              "      current browser session. Please rerun this cell to enable.\n",
+              "      </output>\n",
+              "      <script>// Copyright 2017 Google LLC\n",
+              "//\n",
+              "// Licensed under the Apache License, Version 2.0 (the \"License\");\n",
+              "// you may not use this file except in compliance with the License.\n",
+              "// You may obtain a copy of the License at\n",
+              "//\n",
+              "//      http://www.apache.org/licenses/LICENSE-2.0\n",
+              "//\n",
+              "// Unless required by applicable law or agreed to in writing, software\n",
+              "// distributed under the License is distributed on an \"AS IS\" BASIS,\n",
+              "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n",
+              "// See the License for the specific language governing permissions and\n",
+              "// limitations under the License.\n",
+              "\n",
+              "/**\n",
+              " * @fileoverview Helpers for google.colab Python module.\n",
+              " */\n",
+              "(function(scope) {\n",
+              "function span(text, styleAttributes = {}) {\n",
+              "  const element = document.createElement('span');\n",
+              "  element.textContent = text;\n",
+              "  for (const key of Object.keys(styleAttributes)) {\n",
+              "    element.style[key] = styleAttributes[key];\n",
+              "  }\n",
+              "  return element;\n",
+              "}\n",
+              "\n",
+              "// Max number of bytes which will be uploaded at a time.\n",
+              "const MAX_PAYLOAD_SIZE = 100 * 1024;\n",
+              "\n",
+              "function _uploadFiles(inputId, outputId) {\n",
+              "  const steps = uploadFilesStep(inputId, outputId);\n",
+              "  const outputElement = document.getElementById(outputId);\n",
+              "  // Cache steps on the outputElement to make it available for the next call\n",
+              "  // to uploadFilesContinue from Python.\n",
+              "  outputElement.steps = steps;\n",
+              "\n",
+              "  return _uploadFilesContinue(outputId);\n",
+              "}\n",
+              "\n",
+              "// This is roughly an async generator (not supported in the browser yet),\n",
+              "// where there are multiple asynchronous steps and the Python side is going\n",
+              "// to poll for completion of each step.\n",
+              "// This uses a Promise to block the python side on completion of each step,\n",
+              "// then passes the result of the previous step as the input to the next step.\n",
+              "function _uploadFilesContinue(outputId) {\n",
+              "  const outputElement = document.getElementById(outputId);\n",
+              "  const steps = outputElement.steps;\n",
+              "\n",
+              "  const next = steps.next(outputElement.lastPromiseValue);\n",
+              "  return Promise.resolve(next.value.promise).then((value) => {\n",
+              "    // Cache the last promise value to make it available to the next\n",
+              "    // step of the generator.\n",
+              "    outputElement.lastPromiseValue = value;\n",
+              "    return next.value.response;\n",
+              "  });\n",
+              "}\n",
+              "\n",
+              "/**\n",
+              " * Generator function which is called between each async step of the upload\n",
+              " * process.\n",
+              " * @param {string} inputId Element ID of the input file picker element.\n",
+              " * @param {string} outputId Element ID of the output display.\n",
+              " * @return {!Iterable<!Object>} Iterable of next steps.\n",
+              " */\n",
+              "function* uploadFilesStep(inputId, outputId) {\n",
+              "  const inputElement = document.getElementById(inputId);\n",
+              "  inputElement.disabled = false;\n",
+              "\n",
+              "  const outputElement = document.getElementById(outputId);\n",
+              "  outputElement.innerHTML = '';\n",
+              "\n",
+              "  const pickedPromise = new Promise((resolve) => {\n",
+              "    inputElement.addEventListener('change', (e) => {\n",
+              "      resolve(e.target.files);\n",
+              "    });\n",
+              "  });\n",
+              "\n",
+              "  const cancel = document.createElement('button');\n",
+              "  inputElement.parentElement.appendChild(cancel);\n",
+              "  cancel.textContent = 'Cancel upload';\n",
+              "  const cancelPromise = new Promise((resolve) => {\n",
+              "    cancel.onclick = () => {\n",
+              "      resolve(null);\n",
+              "    };\n",
+              "  });\n",
+              "\n",
+              "  // Wait for the user to pick the files.\n",
+              "  const files = yield {\n",
+              "    promise: Promise.race([pickedPromise, cancelPromise]),\n",
+              "    response: {\n",
+              "      action: 'starting',\n",
+              "    }\n",
+              "  };\n",
+              "\n",
+              "  cancel.remove();\n",
+              "\n",
+              "  // Disable the input element since further picks are not allowed.\n",
+              "  inputElement.disabled = true;\n",
+              "\n",
+              "  if (!files) {\n",
+              "    return {\n",
+              "      response: {\n",
+              "        action: 'complete',\n",
+              "      }\n",
+              "    };\n",
+              "  }\n",
+              "\n",
+              "  for (const file of files) {\n",
+              "    const li = document.createElement('li');\n",
+              "    li.append(span(file.name, {fontWeight: 'bold'}));\n",
+              "    li.append(span(\n",
+              "        `(${file.type || 'n/a'}) - ${file.size} bytes, ` +\n",
+              "        `last modified: ${\n",
+              "            file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() :\n",
+              "                                    'n/a'} - `));\n",
+              "    const percent = span('0% done');\n",
+              "    li.appendChild(percent);\n",
+              "\n",
+              "    outputElement.appendChild(li);\n",
+              "\n",
+              "    const fileDataPromise = new Promise((resolve) => {\n",
+              "      const reader = new FileReader();\n",
+              "      reader.onload = (e) => {\n",
+              "        resolve(e.target.result);\n",
+              "      };\n",
+              "      reader.readAsArrayBuffer(file);\n",
+              "    });\n",
+              "    // Wait for the data to be ready.\n",
+              "    let fileData = yield {\n",
+              "      promise: fileDataPromise,\n",
+              "      response: {\n",
+              "        action: 'continue',\n",
+              "      }\n",
+              "    };\n",
+              "\n",
+              "    // Use a chunked sending to avoid message size limits. See b/62115660.\n",
+              "    let position = 0;\n",
+              "    do {\n",
+              "      const length = Math.min(fileData.byteLength - position, MAX_PAYLOAD_SIZE);\n",
+              "      const chunk = new Uint8Array(fileData, position, length);\n",
+              "      position += length;\n",
+              "\n",
+              "      const base64 = btoa(String.fromCharCode.apply(null, chunk));\n",
+              "      yield {\n",
+              "        response: {\n",
+              "          action: 'append',\n",
+              "          file: file.name,\n",
+              "          data: base64,\n",
+              "        },\n",
+              "      };\n",
+              "\n",
+              "      let percentDone = fileData.byteLength === 0 ?\n",
+              "          100 :\n",
+              "          Math.round((position / fileData.byteLength) * 100);\n",
+              "      percent.textContent = `${percentDone}% done`;\n",
+              "\n",
+              "    } while (position < fileData.byteLength);\n",
+              "  }\n",
+              "\n",
+              "  // All done.\n",
+              "  yield {\n",
+              "    response: {\n",
+              "      action: 'complete',\n",
+              "    }\n",
+              "  };\n",
+              "}\n",
+              "\n",
+              "scope.google = scope.google || {};\n",
+              "scope.google.colab = scope.google.colab || {};\n",
+              "scope.google.colab._files = {\n",
+              "  _uploadFiles,\n",
+              "  _uploadFilesContinue,\n",
+              "};\n",
+              "})(self);\n",
+              "</script> "
+            ]
+          },
+          "metadata": {}
+        },
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Saving log_0_r.txt to log_0_r.txt\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "\n",
+        "# Nome del file caricato\n",
+        "file_name = \"log_0.txt\"\n",
+        "\n",
+        "# Leggi il file CSV\n",
+        "df = pd.read_csv(file_name, delim_whitespace=True)\n",
+        "print(df)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "teS4AdBTEt6E",
+        "outputId": "4f388670-a12d-470a-9aca-e364373cb6f1"
+      },
+      "execution_count": 82,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "             A_X        A_Y        A_Z        G_X        G_Y       G_Z  LABEL\n",
+            "0     315.567350  858.79490  481.12244  13.294855  -7.129887  1.537017      4\n",
+            "1     302.190900  868.88666  539.66040   3.798274  -5.414499  2.472578      4\n",
+            "2     313.276280  912.06810  531.18470  -5.768028  -3.185862  1.817108      4\n",
+            "3     310.817320  917.65420  540.63873 -22.828638  -4.131567  1.024986      4\n",
+            "4     316.312740  901.22205  543.10240 -42.944280   0.197735  0.406270      4\n",
+            "...          ...        ...        ...        ...        ...       ...    ...\n",
+            "6235  -10.822457  512.18990  722.94920 -24.525452  14.551058 -8.906546      4\n",
+            "6236   -4.596139  532.58770  766.87415 -30.120660  14.994871 -8.671070      4\n",
+            "6237  -83.444954  570.95880  764.66330 -18.811827  13.956538 -4.866513      4\n",
+            "6238 -167.231080  622.76263  802.40340  -7.629493  14.640054 -4.430389      4\n",
+            "6239 -161.392730  667.77563  753.92180  -4.475125  14.659633 -8.910281      4\n",
+            "\n",
+            "[6240 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Nome del file caricato\n",
+        "file_name = \"log_0_w.txt\"\n",
+        "\n",
+        "# Leggi il file CSV\n",
+        "df_w = pd.read_csv(file_name, delim_whitespace=True)\n",
+        "print(df_w)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ZYOHE6IbeQEq",
+        "outputId": "4c67ea8e-c825-45f0-d4e3-f3a01e3031e3"
+      },
+      "execution_count": 93,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "             A_X        A_Y         A_Z        G_X        G_Y         G_Z  \\\n",
+            "0    -1197.13000   80.70360   33.014300   4.593345 -29.849611  182.045300   \n",
+            "1    -1192.77450   98.00611   42.165090  34.546436 -30.309260  183.321700   \n",
+            "2    -1144.47130  160.37572   23.784721  64.134705 -29.814598  177.930740   \n",
+            "3    -1120.84030  184.13516    2.853632  82.815980 -29.363989  181.102970   \n",
+            "4    -1055.11980  229.20325   -1.066584  93.392540 -28.358673  174.565540   \n",
+            "...          ...        ...         ...        ...        ...         ...   \n",
+            "6206  -389.23218  887.20650  286.097960  52.184364 -30.871206    7.313166   \n",
+            "6207  -298.97556  874.00760  292.125920  36.642498 -27.344680    5.937928   \n",
+            "6208  -321.19925  789.36510  266.864870  21.096182 -27.504244   17.977375   \n",
+            "6209  -244.33424  792.12897  263.065520  14.135627 -27.432667   13.657017   \n",
+            "6210  -277.91280  748.99930  266.229600   4.745316 -27.779325   25.178686   \n",
+            "\n",
+            "      LABEL  \n",
+            "0         2  \n",
+            "1         2  \n",
+            "2         2  \n",
+            "3         2  \n",
+            "4         2  \n",
+            "...     ...  \n",
+            "6206      2  \n",
+            "6207      2  \n",
+            "6208      2  \n",
+            "6209      2  \n",
+            "6210      2  \n",
+            "\n",
+            "[6211 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Nome del file caricato\n",
+        "file_name = \"log_0_s.txt\"\n",
+        "\n",
+        "# Leggi il file CSV\n",
+        "df_s = pd.read_csv(file_name, delim_whitespace=True)\n",
+        "print(df_s)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "OL79sUMDeoWS",
+        "outputId": "eb0196a9-ecfb-4d6d-982f-e58a5b7c955d"
+      },
+      "execution_count": 95,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "            A_X        A_Y        A_Z        G_X       G_Y       G_Z  LABEL\n",
+            "0     226.05103  844.81120  570.15610  -0.272157  2.153107 -0.638562      1\n",
+            "1     233.35901  784.10000  588.71240  -9.511084  1.582666 -0.533574      1\n",
+            "2     235.01604  733.40924  590.38520 -13.644578  0.498587 -0.080330      1\n",
+            "3     224.97090  724.04400  603.63650 -11.610197  1.344091  0.850752      1\n",
+            "4     236.83687  744.09480  616.48785  -5.207508 -1.024863  0.160534      1\n",
+            "...         ...        ...        ...        ...       ...       ...    ...\n",
+            "6235  611.76260  511.43796  590.06100   3.759375 -0.488000  0.398139      1\n",
+            "6236  615.68320  521.66846  598.71050   2.359332  0.161967  0.139417      1\n",
+            "6237  602.09510  522.55510  607.43945  -0.176168 -0.783565 -0.087244      1\n",
+            "6238  614.72230  522.26776  564.94037  -0.046685  0.840690 -0.031455      1\n",
+            "6239  603.89056  527.49744  594.45280   0.079200  1.692034  0.567268      1\n",
+            "\n",
+            "[6240 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Nome del file caricato\n",
+        "file_name = \"log_0_r.txt\"\n",
+        "\n",
+        "# Leggi il file CSV\n",
+        "df_r = pd.read_csv(file_name, delim_whitespace=True)\n",
+        "print(df_r)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "dqhna6mDeoYi",
+        "outputId": "0cb3b5b7-799b-4783-ab7f-b76dc64e8313"
+      },
+      "execution_count": 97,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "             A_X        A_Y         A_Z         G_X         G_Y         G_Z  \\\n",
+            "0     -288.98900  1076.1000    7.913870  154.829240  -28.555128    6.236703   \n",
+            "1     -302.01877  1173.3239  -16.882715  150.453980  -24.735508   11.807590   \n",
+            "2     -301.28455  1250.1473   -7.487444  131.278900  -23.470661   14.873240   \n",
+            "3     -284.98557  1310.8184   12.022265  115.655754  -25.417107   19.124320   \n",
+            "4     -296.46802  1269.8370   33.356007   80.733360  -24.106104   21.798275   \n",
+            "...          ...        ...         ...         ...         ...         ...   \n",
+            "6235 -3112.05180  3999.2940  394.052460  148.116740 -199.279190 -388.047120   \n",
+            "6236 -2885.49660  4388.5566  402.799300  117.789345 -170.745820 -314.514900   \n",
+            "6237 -2266.66460  4215.4230  411.966500   82.972740 -138.931260 -227.863770   \n",
+            "6238 -1755.57290  3619.5417  295.274170   81.245680 -109.112340 -161.469860   \n",
+            "6239 -1370.78310  2991.5234  242.213550  100.450440  -82.234764 -113.261610   \n",
+            "\n",
+            "      LABEL  \n",
+            "0         3  \n",
+            "1         3  \n",
+            "2         3  \n",
+            "3         3  \n",
+            "4         3  \n",
+            "...     ...  \n",
+            "6235      3  \n",
+            "6236      3  \n",
+            "6237      3  \n",
+            "6238      3  \n",
+            "6239      3  \n",
+            "\n",
+            "[6240 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_new = pd.concat([df, df_r, df_s, df_w], axis=0, ignore_index=True)"
+      ],
+      "metadata": {
+        "id": "drir2xS3eobG"
+      },
+      "execution_count": 100,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(df_new)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "NMAOQkWXeodN",
+        "outputId": "892548c0-9ed3-40e9-ee4a-1ba98486073c"
+      },
+      "execution_count": 101,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "             A_X        A_Y        A_Z        G_X        G_Y        G_Z  LABEL\n",
+            "0      315.56735  858.79490  481.12244  13.294855  -7.129887   1.537017      4\n",
+            "1      302.19090  868.88666  539.66040   3.798274  -5.414499   2.472578      4\n",
+            "2      313.27628  912.06810  531.18470  -5.768028  -3.185862   1.817108      4\n",
+            "3      310.81732  917.65420  540.63873 -22.828638  -4.131567   1.024986      4\n",
+            "4      316.31274  901.22205  543.10240 -42.944280   0.197735   0.406270      4\n",
+            "...          ...        ...        ...        ...        ...        ...    ...\n",
+            "24926 -389.23218  887.20650  286.09796  52.184364 -30.871206   7.313166      2\n",
+            "24927 -298.97556  874.00760  292.12592  36.642498 -27.344680   5.937928      2\n",
+            "24928 -321.19925  789.36510  266.86487  21.096182 -27.504244  17.977375      2\n",
+            "24929 -244.33424  792.12897  263.06552  14.135627 -27.432667  13.657017      2\n",
+            "24930 -277.91280  748.99930  266.22960   4.745316 -27.779325  25.178686      2\n",
+            "\n",
+            "[24931 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "pjep71r5eogm"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "x_train = df_new.iloc[:,0:6]\n",
+        "\n",
+        "print(x_train)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "HbUeWNpVEuC6",
+        "outputId": "5a2336bd-c3f9-4a46-ccd2-b4b1fd1c2858"
+      },
+      "execution_count": 102,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "             A_X        A_Y        A_Z        G_X        G_Y        G_Z\n",
+            "0      315.56735  858.79490  481.12244  13.294855  -7.129887   1.537017\n",
+            "1      302.19090  868.88666  539.66040   3.798274  -5.414499   2.472578\n",
+            "2      313.27628  912.06810  531.18470  -5.768028  -3.185862   1.817108\n",
+            "3      310.81732  917.65420  540.63873 -22.828638  -4.131567   1.024986\n",
+            "4      316.31274  901.22205  543.10240 -42.944280   0.197735   0.406270\n",
+            "...          ...        ...        ...        ...        ...        ...\n",
+            "24926 -389.23218  887.20650  286.09796  52.184364 -30.871206   7.313166\n",
+            "24927 -298.97556  874.00760  292.12592  36.642498 -27.344680   5.937928\n",
+            "24928 -321.19925  789.36510  266.86487  21.096182 -27.504244  17.977375\n",
+            "24929 -244.33424  792.12897  263.06552  14.135627 -27.432667  13.657017\n",
+            "24930 -277.91280  748.99930  266.22960   4.745316 -27.779325  25.178686\n",
+            "\n",
+            "[24931 rows x 6 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "y_train = df_new.iloc[:,6]\n",
+        "print(y_train)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "o0zBIyQzEuFS",
+        "outputId": "a861651b-0bdc-4219-9392-1c10cb255b50"
+      },
+      "execution_count": 103,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "0        4\n",
+            "1        4\n",
+            "2        4\n",
+            "3        4\n",
+            "4        4\n",
+            "        ..\n",
+            "24926    2\n",
+            "24927    2\n",
+            "24928    2\n",
+            "24929    2\n",
+            "24930    2\n",
+            "Name: LABEL, Length: 24931, dtype: int64\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "\n",
+        "# Supponendo che il tuo DataFrame si chiami df e la colonna da codificare sia 'colonna_da_codificare'\n",
+        "# Sostituisci 'colonna_da_codificare' con il nome reale della tua colonna\n",
+        "y_train_dum = pd.get_dummies(y_train)"
+      ],
+      "metadata": {
+        "id": "UXOWKPRPgPt2"
+      },
+      "execution_count": 106,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(y_train_dum)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "sZSK-aVcgPxQ",
+        "outputId": "824540a5-807f-4788-c323-c55388e3b497"
+      },
+      "execution_count": 107,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "       1  2  3  4\n",
+            "0      0  0  0  1\n",
+            "1      0  0  0  1\n",
+            "2      0  0  0  1\n",
+            "3      0  0  0  1\n",
+            "4      0  0  0  1\n",
+            "...   .. .. .. ..\n",
+            "24926  0  1  0  0\n",
+            "24927  0  1  0  0\n",
+            "24928  0  1  0  0\n",
+            "24929  0  1  0  0\n",
+            "24930  0  1  0  0\n",
+            "\n",
+            "[24931 rows x 4 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "class_names = [' A_X', ' A_Y', ' A_Z', 'G_X', 'G_Y',\n",
+        "               'G_Z']"
+      ],
+      "metadata": {
+        "id": "CjHtZ7KiEuHg"
+      },
+      "execution_count": 85,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "modello"
+      ],
+      "metadata": {
+        "id": "WUjZMfvmK17k"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Creazione del modello\n",
+        "model = keras.Sequential()"
+      ],
+      "metadata": {
+        "id": "Nz-ZXArMEuJ_"
+      },
+      "execution_count": 108,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout\n"
+      ],
+      "metadata": {
+        "id": "qiajZ07oLQba"
+      },
+      "execution_count": 109,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Aggiunta di strati completamente connessi\n",
+        "model.add(Dense(64, activation='relu', input_shape=(6,)))\n",
+        "model.add(Dropout(0.5))\n",
+        "model.add(Dense(32, activation='relu'))\n",
+        "model.add(Dropout(0.5))\n",
+        "model.add(Dense(4, activation='softmax'))  # 4 classi: cycling, running, stationary, walking\n"
+      ],
+      "metadata": {
+        "id": "b0YzLM3lLH-7"
+      },
+      "execution_count": 110,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Compilazione del modello\n",
+        "model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])"
+      ],
+      "metadata": {
+        "id": "mMo6nNBoLIBD"
+      },
+      "execution_count": 111,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "model.fit(x_train, y_train_dum, epochs=10)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "vMzvmMC8LID-",
+        "outputId": "bb41c457-e4cc-489e-f1ab-22ae8b6c9d3d"
+      },
+      "execution_count": 112,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Epoch 1/10\n",
+            "780/780 [==============================] - 4s 3ms/step - loss: 26.0299 - accuracy: 0.5008\n",
+            "Epoch 2/10\n",
+            "780/780 [==============================] - 2s 3ms/step - loss: 1.7483 - accuracy: 0.4843\n",
+            "Epoch 3/10\n",
+            "780/780 [==============================] - 2s 2ms/step - loss: 1.3474 - accuracy: 0.4885\n",
+            "Epoch 4/10\n",
+            "780/780 [==============================] - 2s 2ms/step - loss: 1.1853 - accuracy: 0.5225\n",
+            "Epoch 5/10\n",
+            "780/780 [==============================] - 2s 2ms/step - loss: 1.0425 - accuracy: 0.5601\n",
+            "Epoch 6/10\n",
+            "780/780 [==============================] - 2s 2ms/step - loss: 0.9654 - accuracy: 0.6086\n",
+            "Epoch 7/10\n",
+            "780/780 [==============================] - 2s 2ms/step - loss: 0.8810 - accuracy: 0.6553\n",
+            "Epoch 8/10\n",
+            "780/780 [==============================] - 2s 3ms/step - loss: 0.7707 - accuracy: 0.7082\n",
+            "Epoch 9/10\n",
+            "780/780 [==============================] - 3s 3ms/step - loss: 0.6959 - accuracy: 0.7387\n",
+            "Epoch 10/10\n",
+            "780/780 [==============================] - 2s 3ms/step - loss: 0.6544 - accuracy: 0.7562\n"
+          ]
+        },
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "<keras.src.callbacks.History at 0x7bdc4c4bc6a0>"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 112
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "KERAS_MODEL_NAME = \"STM\""
+      ],
+      "metadata": {
+        "id": "ZA6mowCxLIGK"
+      },
+      "execution_count": 114,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "model.save(KERAS_MODEL_NAME)"
+      ],
+      "metadata": {
+        "id": "QUYZ-ZnQLIJj"
+      },
+      "execution_count": 115,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "convert_bytes(get_file_size(KERAS_MODEL_NAME), \"MB\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "lHje_8uhiFJ-",
+        "outputId": "52ed3842-aea7-40fd-e90c-e6855f707bc4"
+      },
+      "execution_count": 116,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "File size: 0.004 Megabytes\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "keras_model_size = get_file_size(KERAS_MODEL_NAME)"
+      ],
+      "metadata": {
+        "id": "1oZWAzxAiFMQ"
+      },
+      "execution_count": 117,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "uploaded = files.upload()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 73
+        },
+        "id": "IKeQazR7iouy",
+        "outputId": "711726d6-e4f7-4ca1-cce4-86e755eb1ea3"
+      },
+      "execution_count": 131,
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.HTML object>"
+            ],
+            "text/html": [
+              "\n",
+              "     <input type=\"file\" id=\"files-fc222cb3-8e29-4ec1-822f-75d240cac135\" name=\"files[]\" multiple disabled\n",
+              "        style=\"border:none\" />\n",
+              "     <output id=\"result-fc222cb3-8e29-4ec1-822f-75d240cac135\">\n",
+              "      Upload widget is only available when the cell has been executed in the\n",
+              "      current browser session. Please rerun this cell to enable.\n",
+              "      </output>\n",
+              "      <script>// Copyright 2017 Google LLC\n",
+              "//\n",
+              "// Licensed under the Apache License, Version 2.0 (the \"License\");\n",
+              "// you may not use this file except in compliance with the License.\n",
+              "// You may obtain a copy of the License at\n",
+              "//\n",
+              "//      http://www.apache.org/licenses/LICENSE-2.0\n",
+              "//\n",
+              "// Unless required by applicable law or agreed to in writing, software\n",
+              "// distributed under the License is distributed on an \"AS IS\" BASIS,\n",
+              "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n",
+              "// See the License for the specific language governing permissions and\n",
+              "// limitations under the License.\n",
+              "\n",
+              "/**\n",
+              " * @fileoverview Helpers for google.colab Python module.\n",
+              " */\n",
+              "(function(scope) {\n",
+              "function span(text, styleAttributes = {}) {\n",
+              "  const element = document.createElement('span');\n",
+              "  element.textContent = text;\n",
+              "  for (const key of Object.keys(styleAttributes)) {\n",
+              "    element.style[key] = styleAttributes[key];\n",
+              "  }\n",
+              "  return element;\n",
+              "}\n",
+              "\n",
+              "// Max number of bytes which will be uploaded at a time.\n",
+              "const MAX_PAYLOAD_SIZE = 100 * 1024;\n",
+              "\n",
+              "function _uploadFiles(inputId, outputId) {\n",
+              "  const steps = uploadFilesStep(inputId, outputId);\n",
+              "  const outputElement = document.getElementById(outputId);\n",
+              "  // Cache steps on the outputElement to make it available for the next call\n",
+              "  // to uploadFilesContinue from Python.\n",
+              "  outputElement.steps = steps;\n",
+              "\n",
+              "  return _uploadFilesContinue(outputId);\n",
+              "}\n",
+              "\n",
+              "// This is roughly an async generator (not supported in the browser yet),\n",
+              "// where there are multiple asynchronous steps and the Python side is going\n",
+              "// to poll for completion of each step.\n",
+              "// This uses a Promise to block the python side on completion of each step,\n",
+              "// then passes the result of the previous step as the input to the next step.\n",
+              "function _uploadFilesContinue(outputId) {\n",
+              "  const outputElement = document.getElementById(outputId);\n",
+              "  const steps = outputElement.steps;\n",
+              "\n",
+              "  const next = steps.next(outputElement.lastPromiseValue);\n",
+              "  return Promise.resolve(next.value.promise).then((value) => {\n",
+              "    // Cache the last promise value to make it available to the next\n",
+              "    // step of the generator.\n",
+              "    outputElement.lastPromiseValue = value;\n",
+              "    return next.value.response;\n",
+              "  });\n",
+              "}\n",
+              "\n",
+              "/**\n",
+              " * Generator function which is called between each async step of the upload\n",
+              " * process.\n",
+              " * @param {string} inputId Element ID of the input file picker element.\n",
+              " * @param {string} outputId Element ID of the output display.\n",
+              " * @return {!Iterable<!Object>} Iterable of next steps.\n",
+              " */\n",
+              "function* uploadFilesStep(inputId, outputId) {\n",
+              "  const inputElement = document.getElementById(inputId);\n",
+              "  inputElement.disabled = false;\n",
+              "\n",
+              "  const outputElement = document.getElementById(outputId);\n",
+              "  outputElement.innerHTML = '';\n",
+              "\n",
+              "  const pickedPromise = new Promise((resolve) => {\n",
+              "    inputElement.addEventListener('change', (e) => {\n",
+              "      resolve(e.target.files);\n",
+              "    });\n",
+              "  });\n",
+              "\n",
+              "  const cancel = document.createElement('button');\n",
+              "  inputElement.parentElement.appendChild(cancel);\n",
+              "  cancel.textContent = 'Cancel upload';\n",
+              "  const cancelPromise = new Promise((resolve) => {\n",
+              "    cancel.onclick = () => {\n",
+              "      resolve(null);\n",
+              "    };\n",
+              "  });\n",
+              "\n",
+              "  // Wait for the user to pick the files.\n",
+              "  const files = yield {\n",
+              "    promise: Promise.race([pickedPromise, cancelPromise]),\n",
+              "    response: {\n",
+              "      action: 'starting',\n",
+              "    }\n",
+              "  };\n",
+              "\n",
+              "  cancel.remove();\n",
+              "\n",
+              "  // Disable the input element since further picks are not allowed.\n",
+              "  inputElement.disabled = true;\n",
+              "\n",
+              "  if (!files) {\n",
+              "    return {\n",
+              "      response: {\n",
+              "        action: 'complete',\n",
+              "      }\n",
+              "    };\n",
+              "  }\n",
+              "\n",
+              "  for (const file of files) {\n",
+              "    const li = document.createElement('li');\n",
+              "    li.append(span(file.name, {fontWeight: 'bold'}));\n",
+              "    li.append(span(\n",
+              "        `(${file.type || 'n/a'}) - ${file.size} bytes, ` +\n",
+              "        `last modified: ${\n",
+              "            file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() :\n",
+              "                                    'n/a'} - `));\n",
+              "    const percent = span('0% done');\n",
+              "    li.appendChild(percent);\n",
+              "\n",
+              "    outputElement.appendChild(li);\n",
+              "\n",
+              "    const fileDataPromise = new Promise((resolve) => {\n",
+              "      const reader = new FileReader();\n",
+              "      reader.onload = (e) => {\n",
+              "        resolve(e.target.result);\n",
+              "      };\n",
+              "      reader.readAsArrayBuffer(file);\n",
+              "    });\n",
+              "    // Wait for the data to be ready.\n",
+              "    let fileData = yield {\n",
+              "      promise: fileDataPromise,\n",
+              "      response: {\n",
+              "        action: 'continue',\n",
+              "      }\n",
+              "    };\n",
+              "\n",
+              "    // Use a chunked sending to avoid message size limits. See b/62115660.\n",
+              "    let position = 0;\n",
+              "    do {\n",
+              "      const length = Math.min(fileData.byteLength - position, MAX_PAYLOAD_SIZE);\n",
+              "      const chunk = new Uint8Array(fileData, position, length);\n",
+              "      position += length;\n",
+              "\n",
+              "      const base64 = btoa(String.fromCharCode.apply(null, chunk));\n",
+              "      yield {\n",
+              "        response: {\n",
+              "          action: 'append',\n",
+              "          file: file.name,\n",
+              "          data: base64,\n",
+              "        },\n",
+              "      };\n",
+              "\n",
+              "      let percentDone = fileData.byteLength === 0 ?\n",
+              "          100 :\n",
+              "          Math.round((position / fileData.byteLength) * 100);\n",
+              "      percent.textContent = `${percentDone}% done`;\n",
+              "\n",
+              "    } while (position < fileData.byteLength);\n",
+              "  }\n",
+              "\n",
+              "  // All done.\n",
+              "  yield {\n",
+              "    response: {\n",
+              "      action: 'complete',\n",
+              "    }\n",
+              "  };\n",
+              "}\n",
+              "\n",
+              "scope.google = scope.google || {};\n",
+              "scope.google.colab = scope.google.colab || {};\n",
+              "scope.google.colab._files = {\n",
+              "  _uploadFiles,\n",
+              "  _uploadFilesContinue,\n",
+              "};\n",
+              "})(self);\n",
+              "</script> "
+            ]
+          },
+          "metadata": {}
+        },
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Saving log_12_r.txt to log_12_r (1).txt\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Nome del file caricato\n",
+        "file_name = \"log_12_r.txt\"\n",
+        "\n",
+        "# Leggi il file CSV\n",
+        "df_test_r = pd.read_csv(file_name, delim_whitespace=True)\n",
+        "print(df_test_r)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "wZ4wTaYRiow8",
+        "outputId": "21efbedd-44cf-48aa-cac1-0aa1fbb5ba2e"
+      },
+      "execution_count": 133,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "             A_X          A_Y         A_Z        G_X         G_Y         G_Z  \\\n",
+            "0    -1241.89720 -3946.372800  732.341500 -399.00540  -46.338060  156.791370   \n",
+            "1     -826.94960 -3339.334700  713.227900 -370.63504  -64.338770  128.655750   \n",
+            "2     -476.49277 -2796.724000  708.930400 -326.79170  -80.538120  117.063896   \n",
+            "3     -147.65816 -2341.017300  688.612550 -277.73532  -98.743890  109.179600   \n",
+            "4       82.82020 -2011.476200  600.466430 -231.56653 -115.476630  103.223110   \n",
+            "...          ...          ...         ...        ...         ...         ...   \n",
+            "9025  -521.13403    56.402676  125.378525  226.53050   41.935734 -169.873110   \n",
+            "9026  -526.68590   133.165040   79.414505  221.95866   32.159374 -156.468400   \n",
+            "9027  -505.04820   110.122826   14.915887  184.27364   15.716188 -142.996060   \n",
+            "9028  -408.07060   197.939600  -39.087997  174.74520   11.713138 -129.738190   \n",
+            "9029  -392.67337   162.922350  -17.100565  129.60419   -2.219466 -114.519516   \n",
+            "\n",
+            "      LABEL  \n",
+            "0         3  \n",
+            "1         3  \n",
+            "2         3  \n",
+            "3         3  \n",
+            "4         3  \n",
+            "...     ...  \n",
+            "9025      3  \n",
+            "9026      3  \n",
+            "9027      3  \n",
+            "9028      3  \n",
+            "9029      3  \n",
+            "\n",
+            "[9030 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Nome del file caricato\n",
+        "file_name = \"log_12_s.txt\"\n",
+        "\n",
+        "# Leggi il file CSV\n",
+        "df_test_s = pd.read_csv(file_name, delim_whitespace=True)\n",
+        "print(df_test_s)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "4vA_1Od3iozp",
+        "outputId": "7af19da2-debc-4269-c2b9-946fdd57836a"
+      },
+      "execution_count": 134,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "           A_X        A_Y         A_Z       G_X       G_Y       G_Z  LABEL\n",
+            "0     66.41002  965.13135   60.989376  0.058506  1.530033 -2.218525      1\n",
+            "1     77.60854  980.31555   52.602283 -2.076503 -0.229556  0.461739      1\n",
+            "2     78.82208  977.23690   61.127094 -0.869648 -1.776134  0.781775      1\n",
+            "3     71.48235  980.44604   61.625230  1.431119  0.184235 -0.595285      1\n",
+            "4     73.33277  972.57855   82.732600 -0.692508  0.433388 -1.256485      1\n",
+            "...        ...        ...         ...       ...       ...       ...    ...\n",
+            "6235  68.63823  990.97500  115.521835 -1.290940  0.019420  1.953179      1\n",
+            "6236  68.50595  983.25550  134.482040  0.322556  0.950182 -0.062582      1\n",
+            "6237  66.38766  982.81690  142.573940 -0.414928  0.330013 -0.477443      1\n",
+            "6238  77.52120  993.13950  135.437550  0.985631  1.252607  0.979909      1\n",
+            "6239  85.17584  993.08795  143.451280 -1.066952  1.518133 -1.678074      1\n",
+            "\n",
+            "[6240 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Nome del file caricato\n",
+        "file_name = \"log_13_w.txt\"\n",
+        "\n",
+        "# Leggi il file CSV\n",
+        "df_test_w = pd.read_csv(file_name, delim_whitespace=True)\n",
+        "print(df_test_w)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "9E0PvmQQj4xK",
+        "outputId": "2e37e823-d97f-46c2-ec60-8f90cf4ab551"
+      },
+      "execution_count": 135,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "             A_X        A_Y        A_Z        G_X        G_Y        G_Z  LABEL\n",
+            "0    -880.687000  266.81100  339.52800 -12.288169  27.418379 -16.592915      2\n",
+            "1    -874.098140  273.78918  341.83548 -12.346416  27.006054 -19.315160      2\n",
+            "2    -884.570250  302.53876  359.42860 -14.967258  27.826796 -15.255226      2\n",
+            "3    -927.972050  318.25790  367.64395 -14.670334  28.448778 -18.060198      2\n",
+            "4    -940.796300  339.00632  363.09134 -19.675179  29.170850 -13.871478      2\n",
+            "...          ...        ...        ...        ...        ...        ...    ...\n",
+            "5064 -138.897450  948.98486  424.33752 -64.614456  21.141073   6.576263      2\n",
+            "5065 -105.935220  970.48930  412.36795 -70.575240  20.345997   3.644182      2\n",
+            "5066 -124.619550  892.75300  407.94333 -70.874725  20.337234   4.779649      2\n",
+            "5067 -104.666885  921.05804  385.42758 -76.760730  20.685781   4.121827      2\n",
+            "5068 -135.398820  897.73474  410.94250 -74.529090  19.307625   4.489782      2\n",
+            "\n",
+            "[5069 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Nome del file caricato\n",
+        "file_name = \"log_12_c.txt\"\n",
+        "\n",
+        "# Leggi il file CSV\n",
+        "df_test_c = pd.read_csv(file_name, delim_whitespace=True)\n",
+        "print(df_test_c)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ZchDrjswj481",
+        "outputId": "1e0beebd-3de8-40c0-e32a-6cd48d470567"
+      },
+      "execution_count": 136,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "            A_X        A_Y         A_Z        G_X        G_Y        G_Z  LABEL\n",
+            "0    -491.04047  492.80276  1168.98290   6.522276  -7.279567  13.138021      4\n",
+            "1    -665.99020  449.99493  1292.93660  -3.250825 -15.672075  11.597852      4\n",
+            "2    -595.14560  188.47041  1078.00800  -0.292294 -25.484976   9.701257      4\n",
+            "3    -530.05000   31.38487   852.37360  12.957210 -30.832900   7.075108      4\n",
+            "4    -422.06870  185.89170   629.96400  34.374954 -30.816698  10.138948      4\n",
+            "...         ...        ...         ...        ...        ...        ...    ...\n",
+            "6235 -307.90686  919.05347   352.57068 -23.401096  34.288563  36.625410      4\n",
+            "6236 -271.42316  860.34070   327.42834 -22.215183  34.933365  38.007720      4\n",
+            "6237 -260.87537  839.69867   292.19888 -25.289345  36.311825  41.011120      4\n",
+            "6238 -235.27187  859.71280   289.40080 -24.960411  38.894615  41.657963      4\n",
+            "6239 -262.54680  862.87970   297.24512 -22.320202  40.029260  40.131115      4\n",
+            "\n",
+            "[6240 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_test_new = pd.concat([df_test_c, df_test_r, df_test_s, df_test_w], axis=0, ignore_index=True)"
+      ],
+      "metadata": {
+        "id": "8Oke9xFGj5EV"
+      },
+      "execution_count": 137,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(df_test_new)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "v433_00qkhzr",
+        "outputId": "5bb6c926-1d78-4448-ec15-a0f28d8f31a8"
+      },
+      "execution_count": 138,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "              A_X        A_Y         A_Z        G_X        G_Y        G_Z  \\\n",
+            "0     -491.040470  492.80276  1168.98290   6.522276  -7.279567  13.138021   \n",
+            "1     -665.990200  449.99493  1292.93660  -3.250825 -15.672075  11.597852   \n",
+            "2     -595.145600  188.47041  1078.00800  -0.292294 -25.484976   9.701257   \n",
+            "3     -530.050000   31.38487   852.37360  12.957210 -30.832900   7.075108   \n",
+            "4     -422.068700  185.89170   629.96400  34.374954 -30.816698  10.138948   \n",
+            "...           ...        ...         ...        ...        ...        ...   \n",
+            "26574 -138.897450  948.98486   424.33752 -64.614456  21.141073   6.576263   \n",
+            "26575 -105.935220  970.48930   412.36795 -70.575240  20.345997   3.644182   \n",
+            "26576 -124.619550  892.75300   407.94333 -70.874725  20.337234   4.779649   \n",
+            "26577 -104.666885  921.05804   385.42758 -76.760730  20.685781   4.121827   \n",
+            "26578 -135.398820  897.73474   410.94250 -74.529090  19.307625   4.489782   \n",
+            "\n",
+            "       LABEL  \n",
+            "0          4  \n",
+            "1          4  \n",
+            "2          4  \n",
+            "3          4  \n",
+            "4          4  \n",
+            "...      ...  \n",
+            "26574      2  \n",
+            "26575      2  \n",
+            "26576      2  \n",
+            "26577      2  \n",
+            "26578      2  \n",
+            "\n",
+            "[26579 rows x 7 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "x_test= df_test_new.iloc[:,0:6]\n",
+        "print(x_test)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Y41o7bsZkh3M",
+        "outputId": "4dd0697f-9b14-44b2-ac1d-17756c9eb748"
+      },
+      "execution_count": 140,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "              A_X        A_Y         A_Z        G_X        G_Y        G_Z\n",
+            "0     -491.040470  492.80276  1168.98290   6.522276  -7.279567  13.138021\n",
+            "1     -665.990200  449.99493  1292.93660  -3.250825 -15.672075  11.597852\n",
+            "2     -595.145600  188.47041  1078.00800  -0.292294 -25.484976   9.701257\n",
+            "3     -530.050000   31.38487   852.37360  12.957210 -30.832900   7.075108\n",
+            "4     -422.068700  185.89170   629.96400  34.374954 -30.816698  10.138948\n",
+            "...           ...        ...         ...        ...        ...        ...\n",
+            "26574 -138.897450  948.98486   424.33752 -64.614456  21.141073   6.576263\n",
+            "26575 -105.935220  970.48930   412.36795 -70.575240  20.345997   3.644182\n",
+            "26576 -124.619550  892.75300   407.94333 -70.874725  20.337234   4.779649\n",
+            "26577 -104.666885  921.05804   385.42758 -76.760730  20.685781   4.121827\n",
+            "26578 -135.398820  897.73474   410.94250 -74.529090  19.307625   4.489782\n",
+            "\n",
+            "[26579 rows x 6 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "y_test = df_test_new.iloc[:,6]\n",
+        "print(y_test)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "RWCLYJTcio3E",
+        "outputId": "3ca672e0-d6bd-4853-856d-feaffefdff22"
+      },
+      "execution_count": 142,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "0        4\n",
+            "1        4\n",
+            "2        4\n",
+            "3        4\n",
+            "4        4\n",
+            "        ..\n",
+            "26574    2\n",
+            "26575    2\n",
+            "26576    2\n",
+            "26577    2\n",
+            "26578    2\n",
+            "Name: LABEL, Length: 26579, dtype: int64\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "y_test_dum = pd.get_dummies(y_test)\n",
+        "print(y_test_dum)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Js7HTfVOnjmo",
+        "outputId": "8e26c595-2aa8-463a-9534-a2212da4742b"
+      },
+      "execution_count": 145,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "       1  2  3  4\n",
+            "0      0  0  0  1\n",
+            "1      0  0  0  1\n",
+            "2      0  0  0  1\n",
+            "3      0  0  0  1\n",
+            "4      0  0  0  1\n",
+            "...   .. .. .. ..\n",
+            "26574  0  1  0  0\n",
+            "26575  0  1  0  0\n",
+            "26576  0  1  0  0\n",
+            "26577  0  1  0  0\n",
+            "26578  0  1  0  0\n",
+            "\n",
+            "[26579 rows x 4 columns]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "test_loss, test_acc = model.evaluate(x_test,  y_test_dum, verbose=2)\n",
+        "print('\\nTest accuracy is {}%'.format(round(100*test_acc, 2)))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "eQKs67gjiFOl",
+        "outputId": "e6259e6f-1b8f-40f9-9ae1-eff00be1461d"
+      },
+      "execution_count": 146,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "831/831 - 1s - loss: 1.5760 - accuracy: 0.4896 - 1s/epoch - 1ms/step\n",
+            "\n",
+            "Test accuracy is 48.96%\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "TF LITE MODEL"
+      ],
+      "metadata": {
+        "id": "g-Y3fggVqaL1"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "TF_LITE_MODEL_FILE_NAME = \"tf_lite_model.tflite\""
+      ],
+      "metadata": {
+        "id": "jH2g7dxOiFRJ"
+      },
+      "execution_count": 147,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tf_lite_converter = tf.lite.TFLiteConverter.from_keras_model(model)\n",
+        "tflite_model = tf_lite_converter.convert()"
+      ],
+      "metadata": {
+        "id": "svF-R5kKiFUZ"
+      },
+      "execution_count": 148,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tflite_model_name = TF_LITE_MODEL_FILE_NAME\n",
+        "open(tflite_model_name, \"wb\").write(tflite_model)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "9qHfNFN6qki-",
+        "outputId": "857231e6-73c2-495a-dc70-d6ac2eb051c5"
+      },
+      "execution_count": 149,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "12804"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 149
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "convert_bytes(get_file_size(TF_LITE_MODEL_FILE_NAME), \"KB\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "k8LOcM3Jqkk_",
+        "outputId": "b4a373c0-8677-4291-d608-34a1c75c4d4f"
+      },
+      "execution_count": 150,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "File size: 12.504 Kilobytes\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tflite_file_size = get_file_size(TF_LITE_MODEL_FILE_NAME)"
+      ],
+      "metadata": {
+        "id": "11-8PzTsqknj"
+      },
+      "execution_count": 151,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "PDi8UlWUqkp8"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "fDDTnSflqkr9"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "l5hQPuEhqkvV"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
